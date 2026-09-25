@@ -1,0 +1,109 @@
+{
+  "name": "jira-to-openspec",
+  "displayName": "Jira to OpenSpec",
+  "description": "Download Jira issues and whole epics as OpenSpec change proposals, and push them back to Jira.",
+  "version": "0.1.0",
+  "publisher": "beatahumeniuk",
+  "license": "MIT",
+  "author": {
+    "name": "Beata Humeniuk"
+  },
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Beata-Humeniuk/jira-to-openspec.git"
+  },
+  "homepage": "https://github.com/Beata-Humeniuk/jira-to-openspec#readme",
+  "bugs": {
+    "url": "https://github.com/Beata-Humeniuk/jira-to-openspec/issues"
+  },
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "jira",
+    "openspec",
+    "markdown",
+    "atlassian",
+    "spec-driven",
+    "epic"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "jiraToOpenspec.fetchIssue",
+        "title": "Download Issue or Epic",
+        "category": "Jira"
+      },
+      {
+        "command": "jiraToOpenspec.publishIssue",
+        "title": "Push Issue",
+        "category": "Jira"
+      },
+      {
+        "command": "jiraToOpenspec.pullIssue",
+        "title": "Pull Issue",
+        "category": "Jira"
+      }
+    ],
+    "markdown.markdownItPlugins": true,
+    "markdown.previewStyles": [
+      "./media/preview.css"
+    ],
+    "configuration": {
+      "title": "Jira to OpenSpec",
+      "properties": {
+        "jiraToOpenspec.token": {
+          "type": "string",
+          "default": "",
+          "description": "Jira token (Cloud: API token; Server/DC: Personal Access Token)."
+        },
+        "jiraToOpenspec.email": {
+          "type": "string",
+          "default": "",
+          "description": "Atlassian account e-mail. Cloud only; Server/DC ignores it."
+        },
+        "jiraToOpenspec.openspecFolder": {
+          "type": "string",
+          "default": "openspec",
+          "description": "The OpenSpec folder. Issues are saved to its changes/ subfolder. Relative paths are resolved from the workspace root."
+        },
+        "jiraToOpenspec.changeField": {
+          "type": "string",
+          "default": "labels",
+          "description": "Where an issue keeps its OpenSpec change name: \"labels\" (a label such as openspec:add-2fa), or a custom text field given by id (customfield_10050) or by name (OpenSpec Change)."
+        },
+        "jiraToOpenspec.changeLabelPrefix": {
+          "type": "string",
+          "default": "openspec:",
+          "description": "With changeField set to \"labels\": the prefix that marks the label holding the change name."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.js --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "vscode:prepublish": "npm run build",
+    "test": "node test/client-test.js && node test/wiki-test.js && node test/change-field-test.js && node test/openspec-paths-test.js && node test/preview-button-test.js && node test/commands-test.js",
+    "package": "npm run build && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "3.9.2",
+    "esbuild": "^0.21.5"
+  },
+  "dependencies": {
+    "markdown-it": "^15.0.0"
+  }
+}
