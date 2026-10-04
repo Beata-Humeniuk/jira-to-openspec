@@ -11,8 +11,6 @@ async function fileExists(uri) {
   }
 }
 
-// Markdown files under <openspec>/changes, bound or not. Archived changes are
-// history and are left out.
 async function readSavedIssues(changesFolder) {
   const out = [];
   await walk(changesFolder, '', out);

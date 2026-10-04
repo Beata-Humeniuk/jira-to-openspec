@@ -31,7 +31,10 @@ managed: true
   notice changes made there meanwhile.
 - `change` is the OpenSpec change. For a `proposal.md` inside
   `changes/<change>/`, the folder name wins, so renaming the folder renames the
-  change on the next push.
+  change on the next push. In Jira the name is kept where
+  `jiraToOpenspec.changeField` says — by default as the line
+  `OpenSpec change: <change>` at the end of the description, which the file
+  itself does not show.
 - `key`, `issueType`, `status`, and `epic` describe the issue at the last
   download. They are refreshed by Pull and not sent to Jira.
 - Keys you add yourself are kept by Pull.

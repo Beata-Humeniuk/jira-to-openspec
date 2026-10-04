@@ -3,6 +3,15 @@
 This file lists user-visible changes to Jira to OpenSpec. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-10-04
+
+### Changed
+
+- The change name is kept by default in a line of the issue description,
+  `OpenSpec change: add-2fa`. The downloaded file does not show the line, and
+  Push keeps it in Jira. Labels remain available with
+  `jiraToOpenspec.changeField` set to `labels`.
+
 ## [0.1.0] - 2026-09-25
 
 ### Added

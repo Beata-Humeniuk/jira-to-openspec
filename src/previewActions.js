@@ -23,9 +23,6 @@ const ACTIONS = {
   '/push': pushFromPreview
 };
 
-// The preview's buttons open vscode://<extension>/<action>?file=<uri>. Only a
-// file that is already open is acted on, so a link from elsewhere cannot reach
-// files the user is not looking at.
 async function handlePreviewUri(uri) {
   const action = ACTIONS[uri.path];
   if (!action) return;

@@ -24,19 +24,26 @@ and context path from each link, so you can work with multiple instances.
 
 ## Where the change name lives in Jira
 
-Each issue says which OpenSpec change it belongs to. By default this is a
-**label** with the `openspec:` prefix — for example `openspec:add-2fa` for the
-change `openspec/changes/add-2fa/`. Labels exist on every issue type in every
-Jira, so there is nothing to set up: type the label in the issue's **Labels**
-field.
+Each issue says which OpenSpec change it belongs to. By default this is a line
+in the issue **description**:
 
-If your Jira administrator prefers a dedicated field, ask for a custom field of
-type *Text Field (single line)*, for example **OpenSpec Change**, added to the
-screens of your stories and tasks. Then set `jiraToOpenspec.changeField` to its
-name (`OpenSpec Change`) or id (`customfield_10050`).
+```text
+OpenSpec change: add-2fa
+```
 
-Change names are kebab-case, as OpenSpec expects. A name typed differently in a
-custom field (`Add 2FA`) is saved as `add-2fa`.
+It names the change `openspec/changes/add-2fa/`. The line can be anywhere in the
+description, on its own line; bold or code formatting around it is ignored.
+The downloaded file does not show the line, and Push puts it back at the end of
+the description.
+
+Set `jiraToOpenspec.changeField` to keep the name elsewhere:
+
+- `labels` — a label with the `openspec:` prefix, such as `openspec:add-2fa`.
+- a custom field of type *Text Field (single line)*, for example **OpenSpec
+  Change**. Give its name (`OpenSpec Change`) or id (`customfield_10050`).
+
+Change names are kebab-case, as OpenSpec expects. A name typed differently
+(`Add 2FA`) is saved as `add-2fa`.
 
 ## Download an issue or an epic
 
@@ -53,8 +60,8 @@ Each issue is saved as the proposal of its change:
 ```text
 openspec/changes/
   add-2fa/
-    proposal.md      ← PROJ-2 (Story, label openspec:add-2fa)
-    PROJ-3.md        ← PROJ-3 (Task, also openspec:add-2fa)
+    proposal.md      ← PROJ-2 (Story, "OpenSpec change: add-2fa")
+    PROJ-3.md        ← PROJ-3 (Task, also add-2fa)
   proj-4-remember-this-device/
     proposal.md      ← PROJ-4 (no change name yet)
 ```
@@ -95,7 +102,8 @@ Markdown preview of a bound file; it asks first and saves unsaved edits.
   (`openspec/changes/<change>/proposal.md`) can be pushed as is.
 
 Push also sets the change name in Jira: the folder name for a `proposal.md`,
-otherwise the `change:` line of the front matter. Other labels are left alone.
+otherwise the `change:` line of the front matter. With `labels`, other labels
+are left alone.
 
 See [Binding and conversion](docs/BINDING.md) for the front matter format and
 the Markdown that survives a round trip.
@@ -107,7 +115,7 @@ the Markdown that survives a round trip.
 | `jiraToOpenspec.token` | — | Jira token for all instances. |
 | `jiraToOpenspec.email` | — | Atlassian account e-mail. Cloud only. |
 | `jiraToOpenspec.openspecFolder` | `openspec` | The OpenSpec folder; changes go to its `changes/`. Relative to the workspace root. |
-| `jiraToOpenspec.changeField` | `labels` | Where the change name lives: `labels`, or a custom field name or id. |
+| `jiraToOpenspec.changeField` | `description` | Where the change name lives: `description`, `labels`, or a custom field name or id. |
 | `jiraToOpenspec.changeLabelPrefix` | `openspec:` | The label prefix when `changeField` is `labels`. |
 
 The token is stored in VS Code settings, which may be synced or shared.

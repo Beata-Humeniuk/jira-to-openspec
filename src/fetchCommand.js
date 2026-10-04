@@ -1,6 +1,7 @@
 const vscode = require('vscode');
+const { withNotification } = require('./progress');
 const { parseJiraUrl } = require('./jiraClient');
-const { jiraContext, loadIssue, loadEpicChildren } = require('./issues');
+const { contextAndIssue, loadEpicChildren } = require('./issues');
 const { derivedChangeName, placeIssues } = require('./openspecPaths');
 const { issueDocument } = require('./issueDocument');
 const { readSavedIssues, confirmOverwrite } = require('./savedIssues');
@@ -83,13 +84,10 @@ async function fetchIssueCommand() {
   let issue;
   let children;
   try {
-    ({ issue, children } = await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: 'Downloading ' + parsed.issueKey + ' from Jira…' },
-      async () => {
-        const ctx = await jiraContext(creds, parsed.site);
-        const found = await loadIssue(ctx, parsed.issueKey);
-        return { issue: found, children: found.isEpic ? await loadEpicChildren(ctx, found.key) : [] };
-      }));
+    ({ issue, children } = await withNotification('Downloading ' + parsed.issueKey + ' from Jira…', async () => {
+      const { ctx, issue: found } = await contextAndIssue(creds, parsed.site, parsed.issueKey);
+      return { issue: found, children: found.isEpic ? await loadEpicChildren(ctx, found.key) : [] };
+    }));
   } catch (e) {
     vscode.window.showErrorMessage(errorMessage(e));
     return;
@@ -115,4 +113,4 @@ async function fetchIssueCommand() {
     (derived ? ' ' + derived + ' ' + issuesWord(derived) + ' had no change name in Jira; the name was made from the key and summary, and Push saves it in Jira.' : ''));
 }
 
-module.exports = { fetchIssueCommand, filesFor };
+module.exports = { fetchIssueCommand };

@@ -1,6 +1,3 @@
-// A `jira:` block binds a Markdown file to an issue. `updated` is the issue's
-// last-change timestamp in Jira, used to notice edits made there meanwhile.
-
 function parseFrontMatter(text) {
   const m = String(text).match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (!m) return { meta: null, body: String(text), rawLength: 0, extraLines: [] };
@@ -22,7 +19,6 @@ function serializeFrontMatter(meta, extraLines) {
     .concat(extraLines || [], ['---', '']).join('\n');
 }
 
-// The value of a top-level `key: value` line.
 function frontMatterValue(extraLines, key) {
   const re = new RegExp('^' + key + ':\\s*(.*?)\\s*$');
   for (const line of extraLines || []) {
@@ -32,7 +28,6 @@ function frontMatterValue(extraLines, key) {
   return '';
 }
 
-// Sets (or adds) a top-level `key: value` line.
 function withFrontMatterValue(extraLines, key, value) {
   const re = new RegExp('^' + key + ':');
   const lines = (extraLines || []).slice();

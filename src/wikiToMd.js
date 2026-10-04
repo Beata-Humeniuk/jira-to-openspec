@@ -1,7 +1,3 @@
-// Jira wiki markup (what REST API v2 returns for a description, on Cloud and on
-// Server/Data Center) to Markdown. Anything not recognised stays as written, so
-// mentions, images and macros survive a round trip as plain text.
-
 const BOUNDARY_BEFORE = '(^|[\\s([{>"\'/])';
 const BOUNDARY_AFTER = '(?=$|[\\s)\\]}<.,;:!?"\'/])';
 
@@ -40,7 +36,6 @@ function inline(text) {
   });
 }
 
-// Splits a table row on "|" that are not inside [links] or {{code}}.
 function cells(row, separator) {
   const out = [];
   let depth = 0;
@@ -85,129 +80,106 @@ function listLine(marker, text, stack) {
   return indent + (level.kind === 'ol' ? level.n + '. ' : '- ') + inline(text);
 }
 
+function readBlock(lines, i, first, end) {
+  const body = [];
+  let rest = first;
+  for (;;) {
+    const close = rest.indexOf(end);
+    if (close >= 0) {
+      body.push(rest.slice(0, close));
+      return { body, last: i };
+    }
+    body.push(rest);
+    if (++i >= lines.length) return { body, last: i - 1 };
+    rest = lines[i];
+  }
+}
+
+function codeBlock(lines, i, match) {
+  const [, kind, params, first] = match;
+  const param = (params || '').split('|')[0];
+  const lang = kind === 'code' && param && !param.includes('=') ? param.trim() : '';
+  const { body, last } = readBlock(lines, i, first, '{' + kind + '}');
+  const text = body.join('\n').replace(/^\n+|\n+$/g, '');
+  const fence = text.includes('```') ? '````' : '```';
+  return { md: [fence + lang, ...(text ? text.split('\n') : []), fence], last };
+}
+
+function quoteBlock(lines, i, first) {
+  const { body, last } = readBlock(lines, i, first, '{quote}');
+  const inner = wikiToMd(body.join('\n')).replace(/\n+$/, '');
+  return { md: inner.split('\n').map((l) => l ? '> ' + l : '>'), last };
+}
+
+function tableBlock(lines, i) {
+  const rows = [];
+  while (i < lines.length && lines[i].trim().startsWith('|')) rows.push(lines[i++].trim());
+  return { md: table(rows), last: i - 1 };
+}
+
+function singleLineBlock(trimmed) {
+  const heading = trimmed.match(/^h([1-6])\.\s+(.*)$/);
+  if (heading) return '#'.repeat(Number(heading[1])) + ' ' + inline(heading[2]);
+  const quote = trimmed.match(/^bq\.\s+(.*)$/);
+  if (quote) return '> ' + inline(quote[1]);
+  if (/^-{4,}$/.test(trimmed)) return '---';
+  return null;
+}
+
+function multiLineBlock(lines, i, trimmed) {
+  const code = trimmed.match(/^\{(code|noformat)(?::([^}]*))?\}(.*)$/);
+  if (code) return codeBlock(lines, i, code);
+  if (trimmed.startsWith('{quote}')) return quoteBlock(lines, i, trimmed.slice('{quote}'.length));
+  if (trimmed.startsWith('|')) return tableBlock(lines, i);
+  return null;
+}
+
 function wikiToMd(wiki) {
   const lines = String(wiki == null ? '' : wiki).replace(/\r\n?/g, '\n').split('\n');
   const out = [];
   let list = [];
-  let i = 0;
   const blank = () => {
     if (out.length && out[out.length - 1] !== '') out.push('');
   };
+  const block = (md) => {
+    blank();
+    list = [];
+    out.push(...md, '');
+  };
 
-  while (i < lines.length) {
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
 
-    const code = trimmed.match(/^\{(code|noformat)(?::([^}]*))?\}(.*)$/);
-    if (code) {
-      blank();
-      list = [];
-      const param = (code[2] || '').split('|')[0];
-      const lang = code[1] === 'code' && param && !param.includes('=') ? param.trim() : '';
-      const end = '{' + code[1] + '}';
-      const body = [];
-      let rest = code[3];
-      for (;;) {
-        const close = rest.indexOf(end);
-        if (close >= 0) {
-          if (rest.slice(0, close)) body.push(rest.slice(0, close));
-          break;
-        }
-        if (rest || body.length) body.push(rest);
-        if (++i >= lines.length) break;
-        rest = lines[i];
-      }
-      const text = body.join('\n').replace(/\n+$/, '');
-      const fence = /```/.test(text) ? '````' : '```';
-      out.push(fence + lang, ...(text ? text.split('\n') : []), fence, '');
-      i++;
+    const multi = multiLineBlock(lines, i, trimmed);
+    if (multi) {
+      block(multi.md);
+      i = multi.last;
       continue;
     }
-
-    if (/^\{quote\}/.test(trimmed)) {
-      blank();
-      list = [];
-      const body = [];
-      let rest = trimmed.slice('{quote}'.length);
-      for (;;) {
-        const close = rest.indexOf('{quote}');
-        if (close >= 0) {
-          body.push(rest.slice(0, close));
-          break;
-        }
-        body.push(rest);
-        if (++i >= lines.length) break;
-        rest = lines[i];
-      }
-      const inner = wikiToMd(body.join('\n')).replace(/\n+$/, '');
-      out.push(...inner.split('\n').map((l) => l ? '> ' + l : '>'), '');
-      i++;
-      continue;
-    }
-
-    if (/^\{panel(:[^}]*)?\}$/.test(trimmed) || trimmed === '{panel}' || /^\{(color|div)(:[^}]*)?\}$/.test(trimmed)) {
-      i++;
-      continue;
-    }
-
+    if (/^\{(panel|color|div)(:[^}]*)?\}$/.test(trimmed)) continue;
     if (!trimmed) {
       list = [];
       blank();
-      i++;
+      continue;
+    }
+    const single = singleLineBlock(trimmed);
+    if (single !== null) {
+      block([single]);
       continue;
     }
 
-    const heading = trimmed.match(/^h([1-6])\.\s+(.*)$/);
-    if (heading) {
-      blank();
-      list = [];
-      out.push('#'.repeat(Number(heading[1])) + ' ' + inline(heading[2]), '');
-      i++;
-      continue;
-    }
-
-    const quote = trimmed.match(/^bq\.\s+(.*)$/);
-    if (quote) {
-      blank();
-      list = [];
-      out.push('> ' + inline(quote[1]), '');
-      i++;
-      continue;
-    }
-
-    if (/^-{4,}$/.test(trimmed)) {
-      blank();
-      list = [];
-      out.push('---', '');
-      i++;
-      continue;
-    }
-
-    if (/^\|/.test(trimmed)) {
-      blank();
-      list = [];
-      const rows = [];
-      while (i < lines.length && /^\|/.test(lines[i].trim())) rows.push(lines[i++].trim());
-      out.push(...table(rows), '');
-      continue;
-    }
-
-    const item = line.match(/^\s*([*#-]+)\s+(.*)$/);
-    if (item && (/^[*#]+$/.test(item[1]) || item[1] === '-')) {
+    const item = line.match(/^\s*([*#]+|-)\s+(.*)$/);
+    if (item) {
       if (!list.length) blank();
-      out.push(listLine(item[1].replace(/-/g, '*'), item[2], list));
-      i++;
-      continue;
+      out.push(listLine(item[1].replace('-', '*'), item[2], list));
+    } else if (list.length) {
+      const previous = out[out.length - 1];
+      const indent = previous.match(/^\s*(?:\d+\. |- )/)[0].length;
+      out[out.length - 1] = previous + '\\\n' + ' '.repeat(indent) + inline(trimmed);
+    } else {
+      out.push(inline(line.replace(/\s+$/, '')));
     }
-
-    if (list.length) {
-      out[out.length - 1] += '\\\n' + ' '.repeat(out[out.length - 1].match(/^\s*(?:\d+\. |- )/)[0].length) + inline(trimmed);
-      i++;
-      continue;
-    }
-
-    out.push(inline(line.replace(/\s+$/, '')));
-    i++;
   }
 
   while (out.length && out[out.length - 1] === '') out.pop();

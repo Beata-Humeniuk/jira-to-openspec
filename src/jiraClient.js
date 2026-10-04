@@ -21,8 +21,6 @@ function decodePath(pathname) {
   }
 }
 
-// An issue link ({ site, issueKey }) or a project link ({ site, projectKey }),
-// on Cloud or Server/Data Center, with or without a context path.
 function parseJiraUrl(input) {
   let u;
   try {
@@ -71,7 +69,6 @@ function issueWebUrl(site, key) {
   return site.origin + site.basePath + '/browse/' + key;
 }
 
-// Jira explains a rejected request (400) in its body; keep that text for the user.
 async function rejection(res) {
   let j = null;
   try {
@@ -95,7 +92,6 @@ async function request(cfg, url, opts) {
   if (res.status === 404) throw new Error('not-found');
   if (res.status === 400) throw await rejection(res);
   if (!res.ok) throw new Error('http-' + res.status);
-  // Updates answer 204 No Content.
   return res.status === 204 ? {} : res.json();
 }
 
@@ -116,7 +112,6 @@ async function fetchIssue(cfg, site, key, fields) {
     '?fields=' + encodeURIComponent(fields.join(',')));
 }
 
-// Cloud pages with nextPageToken (/search/jql); Server/DC with startAt (/search).
 async function searchIssues(cfg, site, jql, fields) {
   const out = [];
   const query = '?jql=' + encodeURIComponent(jql) + '&fields=' + encodeURIComponent(fields.join(',')) +
