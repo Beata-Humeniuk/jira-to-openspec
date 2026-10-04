@@ -1,9 +1,10 @@
 const vscode = require('vscode');
+const { withNotification } = require('./progress');
 const { mdToWiki } = require('./mdToWiki');
 const { parseFrontMatter, serializeFrontMatter, frontMatterValue, withFrontMatterValue } = require('./frontMatter');
 const { parseJiraUrl, isCloud, issueWebUrl, fetchIssue, createIssue, updateIssue } = require('./jiraClient');
-const { jiraContext, loadIssue } = require('./issues');
-const { changeUpdate, changeCreateFields } = require('./changeField');
+const { contextAndIssue } = require('./issues');
+const { changeOfIssue, changeUpdate, changeCreateFields } = require('./changeField');
 const { changeName, changeOfPath } = require('./openspecPaths');
 const { credentialsFor } = require('./credentials');
 const { errorMessage } = require('./messages');
@@ -38,8 +39,6 @@ async function uriSource(uri) {
   };
 }
 
-// The change a file stands for: the folder of an OpenSpec proposal, otherwise
-// the `change:` line of its front matter.
 function changeOfSource(source, extraLines) {
   return changeName(changeOfPath(source.uri.path) || frontMatterValue(extraLines, 'change'));
 }
@@ -65,12 +64,8 @@ async function publishUpdate(source, meta, title, description, change) {
   const creds = await credentialsFor(parsed.site);
   if (!creds) return;
 
-  const { ctx, current } = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: 'Checking ' + parsed.issueKey + ' in Jira…' },
-    async () => {
-      const c = await jiraContext(creds, parsed.site);
-      return { ctx: c, current: await loadIssue(c, parsed.issueKey) };
-    });
+  const { ctx, issue: current } = await withNotification('Checking ' + parsed.issueKey + ' in Jira…',
+    () => contextAndIssue(creds, parsed.site, parsed.issueKey));
   if (meta.updated && current.updated !== meta.updated) {
     const overwrite = 'Overwrite';
     const picked = await vscode.window.showWarningMessage(
@@ -79,22 +74,18 @@ async function publishUpdate(source, meta, title, description, change) {
     if (picked !== overwrite) return;
   }
 
-  const setChange = changeUpdate(ctx.change, current.fields, change);
-  const body = {
-    fields: Object.assign({ summary: title, description }, setChange && setChange.fields),
-    update: setChange && setChange.update
-  };
-  if (!body.update) delete body.update;
-  const updated = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: 'Pushing ' + current.key + ' to Jira…' },
-    async () => {
-      await updateIssue(creds, parsed.site, current.key, body);
-      return fetchIssue(creds, parsed.site, current.key, ['updated']);
-    });
+  const setChange = changeUpdate(ctx.change, current.fields, change, description);
+  const renamed = !!change && changeOfIssue(ctx.change, current.fields) !== change;
+  const body = { fields: { summary: title, description, ...(setChange && setChange.fields) } };
+  if (setChange && setChange.update) body.update = setChange.update;
+  const updated = await withNotification('Pushing ' + current.key + ' to Jira…', async () => {
+    await updateIssue(creds, parsed.site, current.key, body);
+    return fetchIssue(creds, parsed.site, current.key, ['updated']);
+  });
 
   await writeBinding(source, { url: meta.url, updated: updated.fields.updated }, change);
   vscode.window.showInformationMessage('Pushed ' + current.key + ' "' + title + '".' +
-    (setChange ? ' Change name set in Jira: ' + change + '.' : ''));
+    (renamed ? ' Change name set in Jira: ' + change + '.' : ''));
   return { url: meta.url, key: current.key, action: 'updated' };
 }
 
@@ -116,12 +107,8 @@ async function publishNew(source, title, description, change) {
   const creds = await credentialsFor(parsed.site);
   if (!creds) return;
 
-  const { ctx, epic } = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: 'Checking the parent in Jira…' },
-    async () => {
-      const c = await jiraContext(creds, parsed.site);
-      return { ctx: c, epic: parsed.issueKey ? await loadIssue(c, parsed.issueKey) : null };
-    });
+  const { ctx, issue: epic } = await withNotification('Checking the parent in Jira…',
+    () => contextAndIssue(creds, parsed.site, parsed.issueKey));
   if (epic && !epic.isEpic) throw new Error('bad-parent');
 
   const type = await vscode.window.showQuickPick(ISSUE_TYPES,
@@ -133,16 +120,15 @@ async function publishNew(source, title, description, change) {
     issuetype: { name: type },
     summary: title,
     description
-  }, changeCreateFields(ctx.change, change));
+  }, changeCreateFields(ctx.change, change, description));
   if (epic && ctx.epicLinkId) fields[ctx.epicLinkId] = epic.key;
   else if (epic && isCloud(parsed.site)) fields.parent = { key: epic.key };
 
-  const created = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: 'Creating the issue in Jira…' },
-    async () => {
-      const made = await createIssue(creds, parsed.site, fields);
-      return fetchIssue(creds, parsed.site, made.key, ['updated']).then((j) => ({ key: made.key, updated: j.fields.updated }));
-    });
+  const created = await withNotification('Creating the issue in Jira…', async () => {
+    const made = await createIssue(creds, parsed.site, fields);
+    const fresh = await fetchIssue(creds, parsed.site, made.key, ['updated']);
+    return { key: made.key, updated: fresh.fields.updated };
+  });
 
   const url = issueWebUrl(parsed.site, created.key);
   await writeBinding(source, { url, updated: created.updated }, change);

@@ -1,7 +1,5 @@
 const assert = (ok, name) => { if (!ok) { console.error('FAIL: ' + name); process.exit(1); } };
 
-// A VS Code stub, just enough to drive the commands end to end: an in-memory
-// disk, open documents, recorded popups, and the answers prompts hand back.
 const disk = new Map();
 const info = [];
 const errors = [];
@@ -133,7 +131,7 @@ function reset() {
   sent.length = 0;
   routes = [];
   docs = [];
-  settings = {};
+  settings = { changeField: 'labels' };
   answers.input = undefined;
   answers.warning = undefined;
   answers.pick = (items) => items.filter((i) => i.picked);
@@ -169,7 +167,6 @@ function epicRoutes() {
 }
 
 async function main() {
-  // An epic: every story and task in it is saved as an OpenSpec change.
   reset();
   routes = epicRoutes();
   answers.input = SITE + '/browse/PROJ-1';
@@ -192,13 +189,11 @@ async function main() {
   assert(!Array.from(disk.keys()).some((p) => p.includes('login-rework')), 'the unpicked epic is not saved');
   assert(info.some((m) => m.includes('Saved 3 issues') && m.includes('Push saves it in Jira')), 'a summary, got: ' + info.join(' | '));
 
-  // Downloading again refreshes the same files without asking.
   warnings.length = 0;
   await fetchIssueCommand();
   assert(!warnings.length, 'files bound to the same issues are refreshed without a prompt');
   assert(!disk.has('/w/openspec/changes/add-2fa/PROJ-2.md'), 'the proposal is not duplicated');
 
-  // A single issue: no picker, just the issue.
   reset();
   routes = [{ match: '/rest/api/2/issue/PROJ-2?', body: STORY }];
   answers.input = SITE + '/browse/PROJ-2';
@@ -206,7 +201,6 @@ async function main() {
   await fetchIssueCommand();
   assert(!errors.length && disk.has('/w/openspec/changes/add-2fa/proposal.md'), 'a single issue is saved, got: ' + errors.join(' | '));
 
-  // A local proposal that is not bound is overwritten only when the user agrees.
   reset();
   disk.set('/w/openspec/changes/add-2fa/proposal.md', '## Why\nLocal draft.\n');
   routes = [{ match: '/rest/api/2/issue/PROJ-2?', body: STORY }];
@@ -215,7 +209,6 @@ async function main() {
   assert(warnings.length === 1 && disk.get('/w/openspec/changes/add-2fa/proposal.md').includes('Local draft'),
     'declining keeps the local proposal');
 
-  // Pull: a newer issue in Jira replaces the file once the user agrees.
   reset();
   const LOCAL = '---\njira:\n  url: ' + SITE + '/browse/PROJ-2\n  updated: 2026-09-01T10:00:00.000+0000\nchange: add-2fa\nkey: PROJ-2\n' +
     'owner: team-auth\ngenerated: 2026-01-01\n---\n\n# Add two-factor login\n\nOld body.\n';
@@ -234,14 +227,12 @@ async function main() {
   assert(text.includes('owner: team-auth') && !text.includes('generated: 2026-01-01'), 'custom keys survive, generated ones refresh');
   assert(docs[0].saved === 1, 'the document is saved');
 
-  // Pull when nothing changed.
   reset();
   disk.set(FILE, LOCAL);
   routes = [{ match: '/rest/api/2/issue/PROJ-2?', body: STORY }];
   await pullIssueCommand(uri(FILE));
   assert(!warnings.length && info.some((m) => m.includes('Already up to date')), 'up to date, no prompt');
 
-  // Push an update: summary and description go to Jira; the change name follows the folder.
   reset();
   const MOVED = '/w/openspec/changes/add-mfa/proposal.md';
   disk.set(MOVED, LOCAL.replace('Old body.', 'Users need **MFA**.\n\n- [ ] 1.1 Add TOTP'));
@@ -261,7 +252,6 @@ async function main() {
   text = disk.get(MOVED);
   assert(text.includes('  updated: 2026-09-25T12:00:00.000+0000\n') && text.includes('change: add-mfa'), 'binding and change name are recorded');
 
-  // Push over a newer issue asks first.
   reset();
   disk.set(FILE, LOCAL);
   current = issue('PROJ-2', Object.assign({}, STORY.fields, { updated: '2026-09-24T00:00:00.000+0000' }));
@@ -273,7 +263,6 @@ async function main() {
   assert(warnings.length === 1 && warnings[0].includes('changed in Jira'), 'a newer issue is called out');
   assert(!sent.some((r) => r.method === 'PUT'), 'declining leaves Jira alone');
 
-  // A new proposal made with OpenSpec becomes a story in an epic.
   reset();
   const NEW = '/w/openspec/changes/add-audit-log/proposal.md';
   disk.set(NEW, '# Add an audit log\n\n## Why\n\nCompliance.\n');
@@ -295,8 +284,6 @@ async function main() {
   assert(disk.get(NEW).startsWith('---\njira:\n  url: ' + SITE + '/browse/PROJ-50\n  updated: 2026-09-25T13:00:00.000+0000\nchange: add-audit-log\n---\n\n# Add an audit log'),
     'the file is bound to the new issue, got:\n' + disk.get(NEW));
 
-  // Server/Data Center: epics are linked through the Epic Link field and the
-  // change name can live in a custom field.
   reset();
   settings = { changeField: 'OpenSpec Change' };
   const SERVER = 'https://jira.acme.com/jira';
@@ -319,7 +306,6 @@ async function main() {
     'the custom field names the change, got: ' + Array.from(disk.keys()).join(', '));
   assert(sent.every((r) => r.url.indexOf('/search/jql') < 0), 'server uses the classic search');
 
-  // Push from the preview asks first and saves unsaved edits.
   reset();
   disk.set(FILE, LOCAL);
   const doc = openDoc(FILE, true);
@@ -337,7 +323,6 @@ async function main() {
   assert(doc.saved === 1 && sent.some((r) => r.method === 'PUT'), 'confirmed push saves and pushes');
   assert(!errors.length, 'no errors on push, got: ' + errors.join(' | '));
 
-  // Jira's explanation of a rejected request reaches the user.
   reset();
   disk.set(FILE, LOCAL);
   routes = [
@@ -346,6 +331,31 @@ async function main() {
   ];
   await publishIssueCommand(uri(FILE)).catch((e) => errors.push(e.message));
   assert(errors.length === 1 && errors[0] === 'Jira: labels: Labels cannot contain spaces.', 'Jira errors are shown as sent, got: ' + errors.join(' | '));
+
+  reset();
+  settings = {};
+  const NOTED = issue('PROJ-7', {
+    summary: 'Export reports', description: 'h2. Why\nUsers ask for CSV.\n\nOpenSpec change: export-reports'
+  });
+  routes = [
+    { match: '/rest/api/2/issue/PROJ-7?fields=updated', body: { fields: { updated: '2026-10-04T09:00:00.000+0000' } } },
+    { match: '/rest/api/2/issue/PROJ-7?', body: NOTED },
+    { method: 'PUT', match: '/rest/api/2/issue/PROJ-7', status: 204 }
+  ];
+  answers.input = SITE + '/browse/PROJ-7';
+  answers.pick = () => { throw new Error('no picker for a single issue'); };
+  await fetchIssueCommand();
+  const NOTED_FILE = '/w/openspec/changes/export-reports/proposal.md';
+  text = disk.get(NOTED_FILE);
+  assert(!errors.length && text, 'the line in the description names the folder, got: ' + errors.join(' | ') + Array.from(disk.keys()).join(', '));
+  assert(text.includes('Users ask for CSV.') && !text.includes('OpenSpec change'), 'the file does not show the line, got:\n' + text);
+  assert(!sent.some((r) => r.url.indexOf('/rest/api/2/field') >= 0), 'no field lookup is needed');
+  disk.set(NOTED_FILE, text.replace('Users ask for CSV.', 'Users ask for CSV and XLSX.'));
+  await publishIssueCommand(uri(NOTED_FILE));
+  const notedPut = sent.find((r) => r.method === 'PUT');
+  assert(notedPut && notedPut.body.fields.description === 'h2. Why\n\nUsers ask for CSV and XLSX.\n\nOpenSpec change: export-reports',
+    'the pushed description keeps the line, got: ' + JSON.stringify(notedPut && notedPut.body));
+  assert(!notedPut.body.update, 'labels are not touched');
 
   console.log('PASS: download, pull and push commands ok');
 }

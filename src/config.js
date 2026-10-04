@@ -14,7 +14,6 @@ function workspaceFolderUri() {
   return folder ? folder.uri : null;
 }
 
-// <openspec>/changes, or null when a relative folder has no workspace to live in.
 function changesFolderUri() {
   const target = parseOpenspecFolder(settings().get('openspecFolder'), os.homedir());
   if (target.kind === 'absolute') return vscode.Uri.joinPath(vscode.Uri.file(target.path), 'changes');

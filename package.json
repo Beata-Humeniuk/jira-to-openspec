@@ -2,7 +2,7 @@
   "name": "jira-to-openspec",
   "displayName": "Jira to OpenSpec",
   "description": "Download Jira issues and whole epics as OpenSpec change proposals, and push them back to Jira.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "beatahumeniuk",
   "license": "MIT",
   "author": {
@@ -82,8 +82,8 @@
         },
         "jiraToOpenspec.changeField": {
           "type": "string",
-          "default": "labels",
-          "description": "Where an issue keeps its OpenSpec change name: \"labels\" (a label such as openspec:add-2fa), or a custom text field given by id (customfield_10050) or by name (OpenSpec Change)."
+          "default": "description",
+          "description": "Where an issue keeps its OpenSpec change name: \"description\" (a line \"OpenSpec change: add-2fa\" in the description), \"labels\" (a label such as openspec:add-2fa), or a custom text field given by id (customfield_10050) or by name (OpenSpec Change)."
         },
         "jiraToOpenspec.changeLabelPrefix": {
           "type": "string",

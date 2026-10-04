@@ -7,13 +7,10 @@ function slugify(text) {
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-// OpenSpec change ids are kebab-case; a name typed in Jira is made one.
 function changeName(text) {
   return slugify(text);
 }
 
-// For an issue that names no change: its key and the start of its summary,
-// e.g. "proj-12-add-two-factor-login".
 function derivedChangeName(key, summary) {
   const words = slugify(summary).split('-').filter(Boolean);
   let name = slugify(key);
@@ -24,7 +21,6 @@ function derivedChangeName(key, summary) {
   return name;
 }
 
-// The change a file belongs to by its place: <openspec>/changes/<change>/proposal.md.
 function changeOfPath(filePath) {
   const parts = String(filePath || '').split(/[\\/]+/);
   const n = parts.length;
@@ -49,10 +45,6 @@ function expandHome(value, homeDir) {
   return value;
 }
 
-// Where each issue goes: the proposal of its change, unless that proposal
-// already belongs to another issue — then next to it, named by the key.
-// `known` maps keys to paths (relative to the changes folder) saved before;
-// `owners` maps those paths back to keys.
 function placeIssues(entries, known, owners) {
   const taken = new Map(owners);
   const out = new Map();
@@ -70,4 +62,4 @@ function placeIssues(entries, known, owners) {
   return out;
 }
 
-module.exports = { slugify, changeName, derivedChangeName, changeOfPath, parseOpenspecFolder, placeIssues };
+module.exports = { changeName, derivedChangeName, changeOfPath, parseOpenspecFolder, placeIssues };

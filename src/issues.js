@@ -1,12 +1,10 @@
 const { fetchFields, fetchIssue, searchIssues, isCloud } = require('./jiraClient');
-const { resolveChangeField, changeOfIssue } = require('./changeField');
+const { resolveChangeField, changeOfIssue, descriptionWithoutChange } = require('./changeField');
 const { changeName } = require('./openspecPaths');
 const { changeField } = require('./config');
 
 const BASE_FIELDS = ['summary', 'description', 'issuetype', 'status', 'parent', 'labels', 'updated', 'project'];
 
-// What one command needs to know about the instance: where the change name
-// lives and, on Server/DC, which field holds the epic link.
 async function jiraContext(creds, site) {
   const setting = changeField();
   const needsFields = setting.kind === 'field' && !/^customfield_\d+$/.test(setting.field);
@@ -23,7 +21,7 @@ async function jiraContext(creds, site) {
 }
 
 function fieldsFor(ctx) {
-  return BASE_FIELDS.concat(ctx.change.id === 'labels' ? [] : [ctx.change.id], ctx.epicLinkId ? [ctx.epicLinkId] : []);
+  return BASE_FIELDS.concat(BASE_FIELDS.includes(ctx.change.id) ? [] : [ctx.change.id], ctx.epicLinkId ? [ctx.epicLinkId] : []);
 }
 
 function isEpic(j) {
@@ -44,7 +42,7 @@ function issueOf(ctx, j) {
   return {
     key: j.key,
     summary: f.summary || '',
-    description: f.description || '',
+    description: descriptionWithoutChange(ctx.change, f.description),
     type: (f.issuetype && f.issuetype.name) || '',
     status: (f.status && f.status.name) || '',
     updated: f.updated || '',
@@ -61,11 +59,15 @@ async function loadIssue(ctx, key) {
   return issueOf(ctx, await fetchIssue(ctx.creds, ctx.site, key, fieldsFor(ctx)));
 }
 
-// Stories, tasks and other issues directly in the epic.
 async function loadEpicChildren(ctx, epicKey) {
   const jql = (ctx.epicLinkId ? '"Epic Link" = ' : 'parent = ') + epicKey + ' ORDER BY key ASC';
   const found = await searchIssues(ctx.creds, ctx.site, jql, fieldsFor(ctx));
   return found.map((j) => ({ ...issueOf(ctx, j), epic: epicKey }));
 }
 
-module.exports = { jiraContext, loadIssue, loadEpicChildren, fieldsFor };
+async function contextAndIssue(creds, site, key) {
+  const ctx = await jiraContext(creds, site);
+  return { ctx, issue: key ? await loadIssue(ctx, key) : null };
+}
+
+module.exports = { contextAndIssue, loadEpicChildren };

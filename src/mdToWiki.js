@@ -1,8 +1,5 @@
 const MarkdownIt = require('markdown-it');
 
-// Markdown to Jira wiki markup, the format REST API v2 accepts for a
-// description on Cloud and on Server/Data Center.
-
 function inline(tokens) {
   let out = '';
   const links = [];
@@ -21,9 +18,7 @@ function inline(tokens) {
         break;
       case 'link_close': {
         const l = links.pop();
-        const text = out.slice(l.start);
-        // Jira links bare addresses by itself.
-        out = out.slice(0, l.start) + (l.auto ? text : text === l.href ? '[' + l.href + ']' : '[' + text + '|' + l.href + ']');
+        out = out.slice(0, l.start) + wikiLink(out.slice(l.start), l.href, l.auto);
         break;
       }
       default: out += t.content || '';
@@ -32,17 +27,37 @@ function inline(tokens) {
   return out;
 }
 
+function wikiLink(text, href, auto) {
+  if (auto) return text;
+  return text === href ? '[' + href + ']' : '[' + text + '|' + href + ']';
+}
+
 function codeBlock(lang, content) {
   const body = String(content).replace(/\n$/, '');
   return lang ? '{code:' + lang + '}\n' + body + '\n{code}' : '{noformat}\n' + body + '\n{noformat}';
 }
 
-// Walks block tokens from `start` until `closeType`, returning wiki lines.
-function blocks(tokens, start, closeType, ctx) {
+function singleTokenBlock(t) {
+  switch (t.type) {
+    case 'fence': return codeBlock((t.info || '').trim().split(/\s+/)[0], t.content);
+    case 'code_block': return codeBlock('', t.content);
+    case 'hr': return '----';
+    case 'html_block': return t.content.replace(/\n$/, '');
+    default: return null;
+  }
+}
+
+function blocks(tokens, start, closeType, markers) {
   const out = [];
   let i = start;
   while (i < tokens.length && tokens[i].type !== closeType) {
     const t = tokens[i];
+    const single = singleTokenBlock(t);
+    if (single !== null) {
+      out.push(single, '');
+      i += 1;
+      continue;
+    }
     switch (t.type) {
       case 'heading_open':
         out.push('h' + t.tag.slice(1) + '. ' + inline(tokens[i + 1].children), '');
@@ -52,33 +67,17 @@ function blocks(tokens, start, closeType, ctx) {
         out.push(inline(tokens[i + 1].children), '');
         i += 3;
         break;
-      case 'fence':
-        out.push(codeBlock((t.info || '').trim().split(/\s+/)[0], t.content), '');
-        i += 1;
-        break;
-      case 'code_block':
-        out.push(codeBlock('', t.content), '');
-        i += 1;
-        break;
-      case 'hr':
-        out.push('----', '');
-        i += 1;
-        break;
-      case 'html_block':
-        out.push(t.content.replace(/\n$/, ''), '');
-        i += 1;
-        break;
       case 'blockquote_open': {
-        const inner = blocks(tokens, i + 1, 'blockquote_close', ctx);
+        const inner = blocks(tokens, i + 1, 'blockquote_close', markers);
         out.push('{quote}', ...trimBlank(inner.lines), '{quote}', '');
         i = inner.next + 1;
         break;
       }
       case 'bullet_list_open':
       case 'ordered_list_open': {
-        const inner = list(tokens, i, ctx.concat(t.type === 'bullet_list_open' ? '*' : '#'));
+        const inner = list(tokens, i, markers.concat(t.type === 'bullet_list_open' ? '*' : '#'));
         out.push(...inner.lines);
-        if (!ctx.length) out.push('');
+        if (!markers.length) out.push('');
         i = inner.next;
         break;
       }
@@ -100,9 +99,7 @@ function list(tokens, start, markers) {
   const out = [];
   let i = start + 1;
   while (tokens[i].type !== closeType) {
-    // list_item_open
     const inner = blocks(tokens, i + 1, 'list_item_close', markers);
-    // The item's own text, then its nested lists (already carrying deeper markers).
     const lines = inner.lines.filter((line) => line !== '');
     let nested = lines.findIndex((line) => /^[*#]+ /.test(line));
     if (nested < 0) nested = lines.length;
@@ -117,7 +114,6 @@ function table(tokens, start) {
   let i = start + 1;
   let row = null;
   let head = false;
-  let emptyHead = true;
   while (tokens[i].type !== 'table_close') {
     const t = tokens[i];
     if (t.type === 'tr_open') row = [];
@@ -125,11 +121,9 @@ function table(tokens, start) {
     if (t.type === 'td_open') head = false;
     if (t.type === 'inline') row.push(inline(t.children).replace(/\|/g, '\\|'));
     if (t.type === 'tr_close') {
-      if (head) {
-        emptyHead = row.every((c) => !c.trim());
-        if (!emptyHead) out.push('||' + row.map((c) => ' ' + c + ' ').join('||') + '||');
-      } else {
-        out.push('|' + row.map((c) => ' ' + c + ' ').join('|') + '|');
+      const separator = head ? '||' : '|';
+      if (!head || row.some((c) => c.trim())) {
+        out.push(separator + row.map((c) => ' ' + c + ' ').join(separator) + separator);
       }
     }
     i++;

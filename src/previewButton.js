@@ -6,9 +6,6 @@ function actionLink(uriScheme, extensionId, action, fileUri) {
   return uriScheme + '://' + extensionId + '/' + action + '?file=' + encodeURIComponent(String(fileUri));
 }
 
-// VS Code decodes the query once before the URI handler sees it, so the value
-// may still be encoded or already plain. Take everything after "file=" as is:
-// a decoded file URI can itself contain "&" or "+".
 function fileUriCandidates(query) {
   const m = /(?:^|&)file=(.*)$/.exec(String(query || ''));
   if (!m || !m[1]) return [];
@@ -20,9 +17,6 @@ function fileUriCandidates(query) {
   return out;
 }
 
-// A markdown-it plugin for the Markdown preview: a file bound to a Jira issue
-// gets small "Pull" and "Push" buttons in the top right corner. They are links
-// back into VS Code, handled by the extension's URI handler.
 function previewButtons(md, options) {
   md.core.ruler.push(TOKEN, (state) => {
     const { meta } = parseFrontMatter(state.src);

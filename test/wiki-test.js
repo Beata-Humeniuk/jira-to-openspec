@@ -48,7 +48,6 @@ const back = wikiToMd(wiki);
 assert(back === PROPOSAL, 'Markdown survives a round trip through Jira, got:\n' + back);
 assert(mdToWiki(back) === wiki, 'and the wiki markup is stable');
 
-// Typical Jira-authored markup.
 const md = wikiToMd([
   'h3. Notes',
   'Some *bold*, _italic_, -struck- text and a well-known date 2026-09-25.',

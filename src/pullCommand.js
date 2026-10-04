@@ -1,7 +1,8 @@
 const vscode = require('vscode');
+const { withNotification } = require('./progress');
 const { parseFrontMatter, frontMatterValue } = require('./frontMatter');
 const { parseJiraUrl } = require('./jiraClient');
-const { jiraContext, loadIssue } = require('./issues');
+const { contextAndIssue } = require('./issues');
 const { pulledDocument } = require('./issueDocument');
 const { credentialsFor } = require('./credentials');
 const { errorMessage } = require('./messages');
@@ -35,9 +36,8 @@ async function pullDocument(document) {
   const creds = await credentialsFor(parsed.site);
   if (!creds) return;
 
-  const issue = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: 'Checking Jira for updates…' },
-    async () => loadIssue(await jiraContext(creds, parsed.site), parsed.issueKey));
+  const { issue } = await withNotification('Checking Jira for updates…',
+    () => contextAndIssue(creds, parsed.site, parsed.issueKey));
   if (meta.updated && issue.updated === meta.updated && !document.isDirty) {
     vscode.window.showInformationMessage('Already up to date — ' + issue.key + ' has not changed in Jira since ' + issue.updated + '.');
     return;

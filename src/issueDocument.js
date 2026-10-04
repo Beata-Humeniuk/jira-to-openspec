@@ -36,8 +36,6 @@ function topKey(line) {
   return /^\s/.test(line) ? null : line.split(':')[0].trim();
 }
 
-// Front matter lines of the previous file that the refreshed issue does not set
-// itself, with any indented lines that belong to them.
 function keptLines(previousLines, freshLines) {
   const fresh = new Set(freshLines.map(topKey));
   const kept = [];
