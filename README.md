@@ -81,8 +81,9 @@ them.
 
 ## Update a file from Jira
 
-Open the Markdown preview: a file bound to an issue shows a small **↻ Pull**
-button in its top right corner. You can also run **Jira: Pull Issue**.
+A file bound to an issue shows a **Pull** button (⟳) in the editor's title
+bar and a small **↻ Pull** button in the top right corner of its Markdown
+preview. You can also run **Jira: Pull Issue**.
 
 The extension compares the issue's last-updated time first. If nothing changed,
 nothing happens. Otherwise it asks before replacing the file content, because
@@ -90,8 +91,9 @@ edits you have not pushed are lost. Your own front matter keys are kept.
 
 ## Push to Jira
 
-Open the Markdown file and run **Jira: Push Issue**, or click **↑ Push** in the
-Markdown preview of a bound file; it asks first and saves unsaved edits.
+Open the Markdown file and run **Jira: Push Issue**. A bound file also has a
+**Push** button (☁↑) in the editor's title bar and **↑ Push** in its
+Markdown preview; both ask first and save unsaved edits.
 
 - **A bound file** (with a `jira:` block) updates its issue: the `#` heading
   becomes the summary and the rest the description. If the issue changed in

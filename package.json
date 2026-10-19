@@ -2,7 +2,7 @@
   "name": "jira-to-openspec",
   "displayName": "Jira to OpenSpec",
   "description": "Download Jira issues and whole epics as OpenSpec change proposals, and push them back to Jira.",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "publisher": "beatahumeniuk",
   "license": "MIT",
   "author": {
@@ -56,8 +56,44 @@
         "command": "jiraToOpenspec.pullIssue",
         "title": "Pull Issue",
         "category": "Jira"
+      },
+      {
+        "command": "jiraToOpenspec.pullFromEditor",
+        "title": "Pull Issue",
+        "category": "Jira",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "jiraToOpenspec.pushFromEditor",
+        "title": "Push Issue",
+        "category": "Jira",
+        "icon": "$(cloud-upload)"
       }
     ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "jiraToOpenspec.pullFromEditor",
+          "when": "resourceLangId == markdown && jiraToOpenspec.boundFile",
+          "group": "navigation@1"
+        },
+        {
+          "command": "jiraToOpenspec.pushFromEditor",
+          "when": "resourceLangId == markdown && jiraToOpenspec.boundFile",
+          "group": "navigation@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "jiraToOpenspec.pullFromEditor",
+          "when": "false"
+        },
+        {
+          "command": "jiraToOpenspec.pushFromEditor",
+          "when": "false"
+        }
+      ]
+    },
     "markdown.markdownItPlugins": true,
     "markdown.previewStyles": [
       "./media/preview.css"

@@ -3,6 +3,14 @@
 This file lists user-visible changes to Jira to OpenSpec. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-10-19
+
+### Added
+
+- A file bound to a Jira issue shows **Pull** and **Push** buttons in the
+  editor's title bar, so an edited description can be pushed without opening
+  the Markdown preview.
+
 ## [0.2.1] - 2026-10-19
 
 ### Fixed
