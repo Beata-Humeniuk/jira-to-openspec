@@ -2,7 +2,7 @@
   "name": "jira-to-openspec",
   "displayName": "Jira to OpenSpec",
   "description": "Download Jira issues and whole epics as OpenSpec change proposals, and push them back to Jira.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "beatahumeniuk",
   "license": "MIT",
   "author": {
