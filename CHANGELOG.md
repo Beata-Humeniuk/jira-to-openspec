@@ -3,6 +3,14 @@
 This file lists user-visible changes to Jira to OpenSpec. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Issue descriptions that Jira stores as HTML (`<h3>`, `<p>`, `<ol>`, `&nbsp;`…)
+  are converted to Markdown on Download and Pull instead of being copied as raw
+  HTML.
+
 ## [0.2.0] - 2026-10-04
 
 ### Changed
