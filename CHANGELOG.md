@@ -3,7 +3,7 @@
 This file lists user-visible changes to Jira to OpenSpec. The project follows
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.1] - 2026-10-19
 
 ### Fixed
 
