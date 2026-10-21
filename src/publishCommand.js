@@ -10,6 +10,7 @@ const { changeOfIssue, changeUpdate, changeCreateFields } = require('./changeFie
 const { changeName, changeOfPath } = require('./openspecPaths');
 const { credentialsFor } = require('./credentials');
 const { errorMessage } = require('./messages');
+const { descriptionFormat } = require('./config');
 
 const ISSUE_TYPES = ['Story', 'Task'];
 
@@ -26,7 +27,9 @@ function splitTitleAndBody(mdBody, fallbackTitle) {
 // Jira fields edited in a rich-text editor store HTML. Wiki markup sent there gets an
 // <a name> anchor per heading, which the editor shows as a flag, so such fields get HTML.
 function descriptionFor(content, sample) {
-  return looksLikeHtml(sample) ? mdToHtml(content) : mdToWiki(content);
+  const format = descriptionFormat();
+  const html = format === 'auto' ? looksLikeHtml(sample) : format === 'html';
+  return html ? mdToHtml(content) : mdToWiki(content);
 }
 
 function editorSource(editor) {

@@ -10,6 +10,9 @@ This file lists user-visible changes to Jira to OpenSpec. The project follows
 - Push sends HTML instead of wiki markup to issues whose description Jira
   stores as HTML. Headings no longer get anchors that the Jira rich-text
   editor shows as red flags. New issues follow the epic's description format.
+  The new `jiraToOpenspec.descriptionFormat` setting (`auto`, `html`, `wiki`)
+  forces one format, e.g. for an issue that holds wiki markup from an earlier
+  push.
 
 ## [0.2.1] - 2026-10-19
 

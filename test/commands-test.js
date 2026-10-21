@@ -376,6 +376,19 @@ async function main() {
     '<h2>Zmiany w procesie:</h2>\n<ol>\n<li>Zmiany w <strong>response</strong></li>\n</ol>\n<p>OpenSpec change: package-change</p>',
   'an HTML description is pushed as HTML, got: ' + errors.join(' | ') + JSON.stringify(richPut && richPut.body));
 
+  reset();
+  settings = { changeField: 'labels', descriptionFormat: 'html' };
+  disk.set(MOVED, LOCAL.replace('Old body.', 'Users need **MFA**.'));
+  routes = [
+    { match: '/rest/api/2/issue/PROJ-2?fields=updated', body: { fields: { updated: '2026-10-21T09:00:00.000+0000' } } },
+    { match: '/rest/api/2/issue/PROJ-2?', body: STORY },
+    { method: 'PUT', match: '/rest/api/2/issue/PROJ-2', status: 204 }
+  ];
+  await publishIssueCommand(uri(MOVED));
+  const forced = sent.find((r) => r.method === 'PUT');
+  assert(forced && forced.body.fields.description === '<p>Users need <strong>MFA</strong>.</p>',
+    'the setting forces HTML over a wiki description, got: ' + JSON.stringify(forced && forced.body));
+
   console.log('PASS: download, pull and push commands ok');
 }
 
