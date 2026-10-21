@@ -61,7 +61,12 @@ const vscodeStub = {
   },
   workspace: {
     get textDocuments() { return docs; },
-    openTextDocument: async (target) => docs.find((d) => d.uri.path === target.path) || openDoc(target.path),
+    openTextDocument: async (target) => {
+      const open = docs.find((d) => d.uri.path === target.path);
+      if (open) return open;
+      if (!disk.has(target.path)) throw new Error('cannot open ' + target.path);
+      return openDoc(target.path);
+    },
     applyEdit: async (edit) => {
       for (const e of edit.edits) {
         const text = disk.get(e.target.path);
@@ -322,6 +327,20 @@ async function main() {
   await handlePreviewUri(push);
   assert(doc.saved === 1 && sent.some((r) => r.method === 'PUT'), 'confirmed push saves and pushes');
   assert(!errors.length, 'no errors on push, got: ' + errors.join(' | '));
+
+  reset();
+  disk.set(FILE, LOCAL);
+  routes = [
+    { match: '/rest/api/2/issue/PROJ-2?fields=updated', body: { fields: { updated: '2026-09-25T12:00:00.000+0000' } } },
+    { match: '/rest/api/2/issue/PROJ-2?', body: STORY },
+    { method: 'PUT', match: '/rest/api/2/issue/PROJ-2', status: 204 }
+  ];
+  answers.warning = 'Push';
+  await handlePreviewUri(push);
+  assert(!errors.length && sent.some((r) => r.method === 'PUT'), 'a preview whose file is not open still pushes, got: ' + errors.join(' | '));
+  reset();
+  await handlePreviewUri({ path: '/push', query: 'file=' + encodeURIComponent(uri('/w/gone.md').toString()) });
+  assert(errors.length === 1 && errors[0].includes('could not be opened'), 'a missing file is reported, got: ' + errors.join(' | '));
 
   reset();
   disk.set(FILE, LOCAL);
