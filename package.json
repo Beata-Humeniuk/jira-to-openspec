@@ -93,15 +93,15 @@
         "jiraToOpenspec.descriptionFormat": {
           "type": "string",
           "enum": [
-            "auto",
             "html",
-            "wiki"
+            "wiki",
+            "auto"
           ],
-          "default": "auto",
+          "default": "html",
           "enumDescriptions": [
-            "HTML when the issue's description (or the epic's, for a new issue) is HTML, wiki markup otherwise.",
             "Always HTML, for Jira description fields edited in a rich-text editor.",
-            "Always Jira wiki markup."
+            "Always Jira wiki markup, for the standard Jira editor.",
+            "HTML when the issue's description (or the epic's, for a new issue) is HTML, wiki markup otherwise."
           ],
           "description": "The format Push sends the description in."
         }
