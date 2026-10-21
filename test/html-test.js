@@ -1,5 +1,6 @@
 const { htmlToMd, looksLikeHtml } = require('../src/htmlToMd');
 const { mdToWiki } = require('../src/mdToWiki');
+const { mdToHtml } = require('../src/mdToHtml');
 
 const assert = (cond, msg) => { if (!cond) { console.error('FAIL: ' + msg); process.exit(1); } };
 
@@ -61,5 +62,11 @@ assert(looksLikeHtml(HTML), 'HTML descriptions are recognised');
 assert(!looksLikeHtml('h2. Why\n* *bold* item\n{code}<b>x</b>{code}'), 'wiki markup is not taken for HTML');
 assert(htmlToMd('') === '' && htmlToMd(null) === '', 'empty descriptions');
 assert(mdToWiki(md).includes('# Pobrać *pierwszy* element\n# Sprawdzić listę\n## jeśli brak'), 'the Markdown pushes back to Jira as wiki markup');
+
+const html = mdToHtml(md);
+assert(html.startsWith('<h2>Zmiany w procesie:</h2>\n<h3>/api/account/package-change/email</h3>'), 'headings go out without anchors, got:\n' + html);
+assert(!/<a name|<a id/.test(html), 'no anchors that the Jira editor shows as flags');
+assert(looksLikeHtml(html) && htmlToMd(html) === md, 'the HTML reads back as the same Markdown, got:\n' + htmlToMd(html));
+assert(mdToHtml('') === '' && mdToHtml('<b>x</b>') === '<p>&lt;b&gt;x&lt;/b&gt;</p>', 'raw HTML in Markdown is escaped');
 
 console.log('PASS: html -> markdown ok');

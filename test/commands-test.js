@@ -357,6 +357,25 @@ async function main() {
     'the pushed description keeps the line, got: ' + JSON.stringify(notedPut && notedPut.body));
   assert(!notedPut.body.update, 'labels are not touched');
 
+  reset();
+  settings = {};
+  const RICH = issue('PROJ-8', {
+    summary: 'Package change', description: '<h2 dir="auto">Zmiany</h2>\n<p>Stare.</p>\n<p>OpenSpec change: package-change</p>'
+  });
+  const RICH_FILE = '/w/openspec/changes/package-change/proposal.md';
+  disk.set(RICH_FILE, '---\njira:\n  url: ' + SITE + '/browse/PROJ-8\n  updated: 2026-09-01T10:00:00.000+0000\n---\n\n' +
+    '# Package change\n\n## Zmiany w procesie:\n\n1. Zmiany w **response**\n');
+  routes = [
+    { match: '/rest/api/2/issue/PROJ-8?fields=updated', body: { fields: { updated: '2026-10-21T09:00:00.000+0000' } } },
+    { match: '/rest/api/2/issue/PROJ-8?', body: RICH },
+    { method: 'PUT', match: '/rest/api/2/issue/PROJ-8', status: 204 }
+  ];
+  await publishIssueCommand(uri(RICH_FILE));
+  const richPut = sent.find((r) => r.method === 'PUT');
+  assert(!errors.length && richPut && richPut.body.fields.description ===
+    '<h2>Zmiany w procesie:</h2>\n<ol>\n<li>Zmiany w <strong>response</strong></li>\n</ol>\n<p>OpenSpec change: package-change</p>',
+  'an HTML description is pushed as HTML, got: ' + errors.join(' | ') + JSON.stringify(richPut && richPut.body));
+
   console.log('PASS: download, pull and push commands ok');
 }
 

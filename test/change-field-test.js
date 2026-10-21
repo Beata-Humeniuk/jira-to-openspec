@@ -47,6 +47,11 @@ assert(JSON.stringify(changeUpdate(desc, { description: WIKI }, 'add-mfa', 'New.
   'the pushed description carries the line');
 assert(changeUpdate(desc, { description: WIKI }, '', 'New.').fields.description === 'New.\n\nOpenSpec change: add-2fa',
   'without a local name the line from Jira is kept');
+const HTML = '<h2>Why</h2>\n<p>Because.</p>\n<p dir="auto">OpenSpec change: add-2fa</p>';
+assert(changeOfIssue(desc, { description: HTML }) === 'add-2fa', 'the name is read from an HTML paragraph');
+assert(descriptionWithoutChange(desc, HTML) === '<h2>Why</h2>\n<p>Because.</p>', 'the HTML paragraph is left out of the file');
+assert(changeUpdate(desc, { description: HTML }, '', '<p>New.</p>').fields.description === '<p>New.</p>\n<p>OpenSpec change: add-2fa</p>',
+  'an HTML description keeps the name in a paragraph');
 assert(changeUpdate(desc, { description: 'x' }, '', 'New.') === null, 'nothing to keep, nothing added');
 assert(changeCreateFields(desc, 'x', '').description === 'OpenSpec change: x', 'a new issue gets the line');
 

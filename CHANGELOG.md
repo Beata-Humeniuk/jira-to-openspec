@@ -3,6 +3,14 @@
 This file lists user-visible changes to Jira to OpenSpec. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.2] - 2026-10-21
+
+### Fixed
+
+- Push sends HTML instead of wiki markup to issues whose description Jira
+  stores as HTML. Headings no longer get anchors that the Jira rich-text
+  editor shows as red flags. New issues follow the epic's description format.
+
 ## [0.2.1] - 2026-10-19
 
 ### Fixed
