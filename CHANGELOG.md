@@ -3,6 +3,20 @@
 This file lists user-visible changes to Jira to OpenSpec. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-10-21
+
+### Changed
+
+- `jiraToOpenspec.descriptionFormat` defaults to `html`, so Push writes HTML
+  without any setup. Set it to `wiki` for the standard Jira wiki editor, or to
+  `auto` to follow each issue's current format.
+
+### Fixed
+
+- The Pull and Push buttons in the Markdown preview work after a window reload,
+  when the preview is restored without its file open: the file is opened from
+  disk instead of showing an error.
+
 ## [0.2.2] - 2026-10-21
 
 ### Fixed

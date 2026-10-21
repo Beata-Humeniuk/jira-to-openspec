@@ -36,7 +36,7 @@ function changeField() {
 
 function descriptionFormat() {
   const value = String(settings().get('descriptionFormat') || '').trim().toLowerCase();
-  return value === 'html' || value === 'wiki' ? value : 'auto';
+  return value === 'wiki' || value === 'auto' ? value : 'html';
 }
 
 module.exports = { changesFolderUri, configuredToken, configuredEmail, changeField, descriptionFormat };

@@ -23,19 +23,31 @@ const ACTIONS = {
   '/push': pushFromPreview
 };
 
+// A preview restored after a window reload has no text document behind it, so the file is opened from disk.
+async function documentFor(query) {
+  const targets = [];
+  for (const candidate of fileUriCandidates(query)) {
+    try {
+      targets.push(vscode.Uri.parse(candidate));
+    } catch (e) { }
+  }
+  const keys = new Set(targets.map((t) => t.toString()));
+  const open = vscode.workspace.textDocuments.find((doc) => keys.has(doc.uri.toString()));
+  if (open) return open;
+  for (const target of targets) {
+    try {
+      return await vscode.workspace.openTextDocument(target);
+    } catch (e) { }
+  }
+  return null;
+}
+
 async function handlePreviewUri(uri) {
   const action = ACTIONS[uri.path];
   if (!action) return;
-  const targets = new Set();
-  for (const candidate of fileUriCandidates(uri.query)) {
-    try {
-      targets.add(vscode.Uri.parse(candidate).toString());
-    } catch (e) { }
-  }
-  const document = vscode.workspace.textDocuments.find(
-    (doc) => targets.has(doc.uri.toString()));
+  const document = await documentFor(uri.query);
   if (!document) {
-    vscode.window.showErrorMessage('Open the Markdown file in VS Code, then use the button in its preview again.');
+    vscode.window.showErrorMessage('The Markdown file behind this preview could not be opened. Open it in VS Code, then use the button again.');
     return;
   }
   await action(document);
