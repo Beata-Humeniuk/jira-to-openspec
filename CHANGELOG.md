@@ -3,7 +3,13 @@
 This file lists user-visible changes to Jira to OpenSpec. The project follows
 [Semantic Versioning](https://semver.org/).
 
-## [0.2.3] - 2026-10-21
+## [0.3.0] - 2026-10-21
+
+### Changed
+
+- `jiraToOpenspec.descriptionFormat` defaults to `html`, so Push writes HTML
+  without any setup. Set it to `wiki` for the standard Jira wiki editor, or to
+  `auto` to follow each issue's current format.
 
 ### Fixed
 

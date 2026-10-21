@@ -136,7 +136,7 @@ function reset() {
   sent.length = 0;
   routes = [];
   docs = [];
-  settings = { changeField: 'labels' };
+  settings = { changeField: 'labels', descriptionFormat: 'wiki' };
   answers.input = undefined;
   answers.warning = undefined;
   answers.pick = (items) => items.filter((i) => i.picked);
@@ -290,7 +290,7 @@ async function main() {
     'the file is bound to the new issue, got:\n' + disk.get(NEW));
 
   reset();
-  settings = { changeField: 'OpenSpec Change' };
+  settings = { changeField: 'OpenSpec Change', descriptionFormat: 'wiki' };
   const SERVER = 'https://jira.acme.com/jira';
   const FIELDS = [
     { id: 'customfield_10100', name: 'Epic Link', schema: { custom: 'com.pyxis.greenhopper.jira:gh-epic-link' } },
@@ -352,7 +352,7 @@ async function main() {
   assert(errors.length === 1 && errors[0] === 'Jira: labels: Labels cannot contain spaces.', 'Jira errors are shown as sent, got: ' + errors.join(' | '));
 
   reset();
-  settings = {};
+  settings = { descriptionFormat: 'auto' };
   const NOTED = issue('PROJ-7', {
     summary: 'Export reports', description: 'h2. Why\nUsers ask for CSV.\n\nOpenSpec change: export-reports'
   });
@@ -393,7 +393,7 @@ async function main() {
   const richPut = sent.find((r) => r.method === 'PUT');
   assert(!errors.length && richPut && richPut.body.fields.description ===
     '<h2>Zmiany w procesie:</h2>\n<ol>\n<li>Zmiany w <strong>response</strong></li>\n</ol>\n<p>OpenSpec change: package-change</p>',
-  'an HTML description is pushed as HTML, got: ' + errors.join(' | ') + JSON.stringify(richPut && richPut.body));
+  'by default the description is pushed as HTML, got: ' + errors.join(' | ') + JSON.stringify(richPut && richPut.body));
 
   reset();
   settings = { changeField: 'labels', descriptionFormat: 'html' };
@@ -406,7 +406,7 @@ async function main() {
   await publishIssueCommand(uri(MOVED));
   const forced = sent.find((r) => r.method === 'PUT');
   assert(forced && forced.body.fields.description === '<p>Users need <strong>MFA</strong>.</p>',
-    'the setting forces HTML over a wiki description, got: ' + JSON.stringify(forced && forced.body));
+    'html forces HTML over a wiki description, got: ' + JSON.stringify(forced && forced.body));
 
   console.log('PASS: download, pull and push commands ok');
 }
