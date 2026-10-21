@@ -117,6 +117,7 @@ the Markdown that survives a round trip.
 | `jiraToOpenspec.openspecFolder` | `openspec` | The OpenSpec folder; changes go to its `changes/`. Relative to the workspace root. |
 | `jiraToOpenspec.changeField` | `description` | Where the change name lives: `description`, `labels`, or a custom field name or id. |
 | `jiraToOpenspec.changeLabelPrefix` | `openspec:` | The label prefix when `changeField` is `labels`. |
+| `jiraToOpenspec.descriptionFormat` | `auto` | How Push writes the description: `html` for fields edited in a rich-text editor, `wiki` for wiki markup, `auto` to follow the issue's current format. |
 
 The token is stored in VS Code settings, which may be synced or shared.
 Restricted Mode is supported.

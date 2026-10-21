@@ -1,7 +1,10 @@
+const { looksLikeHtml } = require('./htmlToMd');
+
 const LABELS = 'labels';
 const DESCRIPTION = 'description';
 const MARKER = 'OpenSpec change';
 const MARKER_LINE = /^[ \t]*[*_]{0,2}openspec[ \t]+change[*_]{0,2}[ \t]*:[ \t]*(.*?)[ \t]*$/im;
+const MARKER_PARAGRAPH = /[ \t]*<p\b[^>]*>[ \t]*openspec[ \t]+change[ \t]*:[ \t]*([^<]*?)[ \t]*<\/p>[ \t]*\n?/i;
 
 function changeFieldSetting(value, prefix) {
   const field = String(value == null ? '' : value).trim();
@@ -31,13 +34,16 @@ function textOf(value) {
 }
 
 function changeInDescription(description) {
-  const m = String(description || '').match(MARKER_LINE);
+  const text = String(description || '');
+  const m = text.match(MARKER_PARAGRAPH) || text.match(MARKER_LINE);
   return m ? m[1].replace(/[*_{}]/g, '').trim() : '';
 }
 
 function descriptionWithoutChange(resolved, description) {
   const text = String(description || '');
-  if (resolved.kind !== 'description' || !MARKER_LINE.test(text)) return text;
+  if (resolved.kind !== 'description') return text;
+  if (MARKER_PARAGRAPH.test(text)) return text.replace(MARKER_PARAGRAPH, '').replace(/\s+$/, '');
+  if (!MARKER_LINE.test(text)) return text;
   const line = new RegExp(MARKER_LINE.source, 'i');
   return text.replace(/\r\n?/g, '\n').split('\n')
     .filter((l) => !line.test(l))
@@ -46,6 +52,7 @@ function descriptionWithoutChange(resolved, description) {
 
 function withChangeLine(description, change) {
   const body = String(description || '').replace(/\n+$/, '');
+  if (looksLikeHtml(body)) return (body ? body + '\n' : '') + '<p>' + MARKER + ': ' + change + '</p>';
   return (body ? body + '\n\n' : '') + MARKER + ': ' + change;
 }
 

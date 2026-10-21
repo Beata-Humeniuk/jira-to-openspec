@@ -2,7 +2,7 @@
   "name": "jira-to-openspec",
   "displayName": "Jira to OpenSpec",
   "description": "Download Jira issues and whole epics as OpenSpec change proposals, and push them back to Jira.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "beatahumeniuk",
   "license": "MIT",
   "author": {
@@ -89,6 +89,17 @@
           "type": "string",
           "default": "openspec:",
           "description": "With changeField set to \"labels\": the prefix that marks the label holding the change name."
+        },
+        "jiraToOpenspec.descriptionFormat": {
+          "type": "string",
+          "enum": ["auto", "html", "wiki"],
+          "default": "auto",
+          "enumDescriptions": [
+            "HTML when the issue's description (or the epic's, for a new issue) is HTML, wiki markup otherwise.",
+            "Always HTML, for Jira description fields edited in a rich-text editor.",
+            "Always Jira wiki markup."
+          ],
+          "description": "The format Push sends the description in."
         }
       }
     }

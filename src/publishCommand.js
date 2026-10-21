@@ -1,6 +1,8 @@
 const vscode = require('vscode');
 const { withNotification } = require('./progress');
 const { mdToWiki } = require('./mdToWiki');
+const { mdToHtml } = require('./mdToHtml');
+const { looksLikeHtml } = require('./htmlToMd');
 const { parseFrontMatter, serializeFrontMatter, frontMatterValue, withFrontMatterValue } = require('./frontMatter');
 const { parseJiraUrl, isCloud, issueWebUrl, fetchIssue, createIssue, updateIssue } = require('./jiraClient');
 const { contextAndIssue } = require('./issues');
@@ -8,6 +10,7 @@ const { changeOfIssue, changeUpdate, changeCreateFields } = require('./changeFie
 const { changeName, changeOfPath } = require('./openspecPaths');
 const { credentialsFor } = require('./credentials');
 const { errorMessage } = require('./messages');
+const { descriptionFormat } = require('./config');
 
 const ISSUE_TYPES = ['Story', 'Task'];
 
@@ -19,6 +22,14 @@ function splitTitleAndBody(mdBody, fallbackTitle) {
   const h1 = mdBody.match(/^#[ \t]+(.+)\r?\n?/m);
   if (!h1) return { title: fallbackTitle, content: mdBody };
   return { title: h1[1].trim(), content: mdBody.replace(h1[0], '') };
+}
+
+// Jira fields edited in a rich-text editor store HTML. Wiki markup sent there gets an
+// <a name> anchor per heading, which the editor shows as a flag, so such fields get HTML.
+function descriptionFor(content, sample) {
+  const format = descriptionFormat();
+  const html = format === 'auto' ? looksLikeHtml(sample) : format === 'html';
+  return html ? mdToHtml(content) : mdToWiki(content);
 }
 
 function editorSource(editor) {
@@ -58,7 +69,7 @@ async function writeBinding(source, meta, change) {
   });
 }
 
-async function publishUpdate(source, meta, title, description, change) {
+async function publishUpdate(source, meta, title, content, change) {
   const parsed = parseJiraUrl(meta.url);
   if (!parsed || !parsed.issueKey) throw new Error('bad-url');
   const creds = await credentialsFor(parsed.site);
@@ -74,6 +85,7 @@ async function publishUpdate(source, meta, title, description, change) {
     if (picked !== overwrite) return;
   }
 
+  const description = descriptionFor(content, current.fields.description);
   const setChange = changeUpdate(ctx.change, current.fields, change, description);
   const renamed = !!change && changeOfIssue(ctx.change, current.fields) !== change;
   const body = { fields: { summary: title, description, ...(setChange && setChange.fields) } };
@@ -101,7 +113,7 @@ async function askForParent() {
   return parsed;
 }
 
-async function publishNew(source, title, description, change) {
+async function publishNew(source, title, content, change) {
   const parsed = await askForParent();
   if (!parsed) return;
   const creds = await credentialsFor(parsed.site);
@@ -115,6 +127,7 @@ async function publishNew(source, title, description, change) {
     { placeHolder: 'Issue type for "' + title + '"', ignoreFocusOut: true });
   if (!type) return;
 
+  const description = descriptionFor(content, epic && epic.fields.description);
   const fields = Object.assign({
     project: { key: epic ? epic.project : parsed.projectKey },
     issuetype: { name: type },
@@ -150,11 +163,9 @@ async function publishIssueCommand(fileUri) {
     const change = changeOfSource(source, extraLines);
     const { title, content } = splitTitleAndBody(body,
       change || source.fileName.replace(/\.md$/i, '') || 'Untitled');
-    const description = mdToWiki(content);
-
     return meta
-      ? await publishUpdate(source, meta, title, description, change)
-      : await publishNew(source, title, description, change);
+      ? await publishUpdate(source, meta, title, content, change)
+      : await publishNew(source, title, content, change);
   } catch (e) {
     if (fileUri) throw new Error(errorMessage(e));
     vscode.window.showErrorMessage(errorMessage(e));

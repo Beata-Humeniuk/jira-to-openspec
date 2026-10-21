@@ -34,4 +34,9 @@ function changeField() {
   return changeFieldSetting(settings().get('changeField'), settings().get('changeLabelPrefix'));
 }
 
-module.exports = { changesFolderUri, configuredToken, configuredEmail, changeField };
+function descriptionFormat() {
+  const value = String(settings().get('descriptionFormat') || '').trim().toLowerCase();
+  return value === 'html' || value === 'wiki' ? value : 'auto';
+}
+
+module.exports = { changesFolderUri, configuredToken, configuredEmail, changeField, descriptionFormat };
