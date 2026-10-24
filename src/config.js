@@ -39,4 +39,8 @@ function descriptionFormat() {
   return value === 'wiki' || value === 'auto' ? value : 'html';
 }
 
-module.exports = { changesFolderUri, configuredToken, configuredEmail, changeField, descriptionFormat };
+function includeComments() {
+  return settings().get('includeComments') === true;
+}
+
+module.exports = { changesFolderUri, configuredToken, configuredEmail, changeField, descriptionFormat, includeComments };

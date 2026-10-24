@@ -408,6 +408,41 @@ async function main() {
   assert(forced && forced.body.fields.description === '<p>Users need <strong>MFA</strong>.</p>',
     'html forces HTML over a wiki description, got: ' + JSON.stringify(forced && forced.body));
 
+  reset();
+  const COMMENTED = issue('PROJ-2', Object.assign({}, STORY.fields, { comment: { comments: [
+    { author: { displayName: 'Anna Nowak' }, created: '2026-10-20T09:15:00.000+0200', body: 'Looks *good*.' }
+  ] } }));
+  routes = [{ match: '/rest/api/2/issue/PROJ-2?', body: COMMENTED }];
+  answers.input = SITE + '/browse/PROJ-2';
+  await fetchIssueCommand();
+  text = disk.get(FILE);
+  assert(!sent[0].url.includes('comment') && !text.includes('## Comments'), 'comments are not downloaded by default');
+
+  reset();
+  settings.includeComments = true;
+  routes = [{ match: '/rest/api/2/issue/PROJ-2?', body: COMMENTED }];
+  answers.input = SITE + '/browse/PROJ-2';
+  await fetchIssueCommand();
+  text = disk.get(FILE);
+  assert(!errors.length && sent[0].url.includes(',comment'), 'the comment field is requested, got: ' + errors.join(' | ') + sent.map((r) => r.url).join(' '));
+  assert(text.includes('- Add a TOTP step\n\n<!-- jira-to-openspec:comments') &&
+    text.includes('## Comments\n\n### Anna Nowak · 2026-10-20 09:15\n\nLooks **good**.\n'),
+  'comments follow the description, got:\n' + text);
+
+  sent.length = 0;
+  routes = [
+    { match: '/rest/api/2/issue/PROJ-2?fields=updated', body: { fields: { updated: '2026-10-24T09:00:00.000+0000' } } },
+    { match: '/rest/api/2/issue/PROJ-2?', body: COMMENTED },
+    { method: 'PUT', match: '/rest/api/2/issue/PROJ-2', status: 204 }
+  ];
+  await publishIssueCommand(uri(FILE));
+  const withComments = sent.find((r) => r.method === 'PUT');
+  assert(!errors.length && withComments && !withComments.body.fields.description.includes('Anna') &&
+    !withComments.body.fields.description.includes('Comments') &&
+    withComments.body.fields.description.endsWith('* Add a TOTP step'),
+  'Push leaves the comments out, got: ' + errors.join(' | ') + JSON.stringify(withComments && withComments.body));
+  assert(disk.get(FILE).includes('### Anna Nowak'), 'the comments stay in the file after Push');
+
   console.log('PASS: download, pull and push commands ok');
 }
 

@@ -1,7 +1,8 @@
 const { fetchFields, fetchIssue, searchIssues, isCloud } = require('./jiraClient');
 const { resolveChangeField, changeOfIssue, descriptionWithoutChange } = require('./changeField');
 const { changeName } = require('./openspecPaths');
-const { changeField } = require('./config');
+const { changeField, includeComments } = require('./config');
+const { commentsOf } = require('./comments');
 
 const BASE_FIELDS = ['summary', 'description', 'issuetype', 'status', 'parent', 'labels', 'updated', 'project'];
 
@@ -16,12 +17,14 @@ async function jiraContext(creds, site) {
     creds,
     site,
     change: resolveChangeField(setting, list),
-    epicLinkId: epicLink ? epicLink.id : ''
+    epicLinkId: epicLink ? epicLink.id : '',
+    comments: includeComments()
   };
 }
 
 function fieldsFor(ctx) {
-  return BASE_FIELDS.concat(BASE_FIELDS.includes(ctx.change.id) ? [] : [ctx.change.id], ctx.epicLinkId ? [ctx.epicLinkId] : []);
+  return BASE_FIELDS.concat(BASE_FIELDS.includes(ctx.change.id) ? [] : [ctx.change.id], ctx.epicLinkId ? [ctx.epicLinkId] : [],
+    ctx.comments ? ['comment'] : []);
 }
 
 function isEpic(j) {
@@ -50,6 +53,7 @@ function issueOf(ctx, j) {
     epic: epicOf(ctx, j),
     isEpic: isEpic(j),
     change: changeName(changeOfIssue(ctx.change, f)),
+    comments: ctx.comments ? commentsOf(f) : [],
     fields: f,
     site: ctx.site
   };

@@ -42,6 +42,11 @@ managed: true
 The first `#` heading is the issue summary. If there is none, the change name
 is used.
 
+With `jiraToOpenspec.includeComments` on, the file ends with the issue's
+comments, after a `<!-- jira-to-openspec:comments … -->` line. Push sends only
+what is above that line, so edits to the comments stay local, and Pull
+replaces them with the current comments from Jira.
+
 ## Markdown ↔ Jira markup
 
 Descriptions are exchanged as Jira wiki markup through REST API v2, which Cloud

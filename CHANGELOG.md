@@ -3,6 +3,14 @@
 This file lists user-visible changes to Jira to OpenSpec. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-10-24
+
+### Added
+
+- `jiraToOpenspec.includeComments` (off by default): Download and Pull add the
+  issue's comments in a **Comments** section at the end of the file. Push
+  leaves that section out, so comments are never sent to Jira.
+
 ## [0.3.0] - 2026-10-21
 
 ### Changed

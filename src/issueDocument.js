@@ -1,7 +1,6 @@
 const { serializeFrontMatter, parseFrontMatter } = require('./frontMatter');
 const { issueWebUrl } = require('./jiraClient');
-const { wikiToMd } = require('./wikiToMd');
-const { htmlToMd, looksLikeHtml } = require('./htmlToMd');
+const { jiraTextToMd, commentsSection } = require('./comments');
 
 const EXTENSION_VERSION = require('../package.json').version;
 
@@ -23,8 +22,9 @@ function describeLines(issue, change) {
 }
 
 function content(issue) {
-  const body = looksLikeHtml(issue.description) ? htmlToMd(issue.description) : wikiToMd(issue.description);
-  return '\n# ' + issue.summary + '\n' + (body ? '\n' + body : '');
+  const body = jiraTextToMd(issue.description);
+  const comments = commentsSection(issue.comments);
+  return '\n# ' + issue.summary + '\n' + (body ? '\n' + body : '') + (comments ? '\n' + comments : '');
 }
 
 function issueDocument(issue, change) {
