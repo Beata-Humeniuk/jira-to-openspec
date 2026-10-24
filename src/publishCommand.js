@@ -11,6 +11,7 @@ const { changeName, changeOfPath } = require('./openspecPaths');
 const { credentialsFor } = require('./credentials');
 const { errorMessage } = require('./messages');
 const { descriptionFormat } = require('./config');
+const { withoutComments } = require('./comments');
 
 const ISSUE_TYPES = ['Story', 'Task'];
 
@@ -159,7 +160,8 @@ async function publishIssueCommand(fileUri) {
 
   try {
     const source = fileUri ? await uriSource(fileUri) : editorSource(editor);
-    const { meta, body, extraLines } = parseFrontMatter(source.text);
+    const { meta, extraLines, ...parts } = parseFrontMatter(source.text);
+    const body = withoutComments(parts.body);
     const change = changeOfSource(source, extraLines);
     const { title, content } = splitTitleAndBody(body,
       change || source.fileName.replace(/\.md$/i, '') || 'Untitled');

@@ -2,7 +2,7 @@
   "name": "jira-to-openspec",
   "displayName": "Jira to OpenSpec",
   "description": "Download Jira issues and whole epics as OpenSpec change proposals, and push them back to Jira.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "beatahumeniuk",
   "license": "MIT",
   "author": {
@@ -104,6 +104,11 @@
             "HTML when the issue's description (or the epic's, for a new issue) is HTML, wiki markup otherwise."
           ],
           "description": "The format Push sends the description in."
+        },
+        "jiraToOpenspec.includeComments": {
+          "type": "boolean",
+          "default": false,
+          "description": "Download and Pull add the issue's comments in a Comments section at the end of the file. Push never sends that section to Jira."
         }
       }
     }
@@ -111,7 +116,7 @@
   "scripts": {
     "build": "esbuild src/extension.js --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
     "vscode:prepublish": "npm run build",
-    "test": "node test/client-test.js && node test/wiki-test.js && node test/html-test.js && node test/change-field-test.js && node test/openspec-paths-test.js && node test/preview-button-test.js && node test/commands-test.js",
+    "test": "node test/client-test.js && node test/wiki-test.js && node test/html-test.js && node test/comments-test.js && node test/change-field-test.js && node test/openspec-paths-test.js && node test/preview-button-test.js && node test/commands-test.js",
     "package": "npm run build && vsce package --no-dependencies"
   },
   "devDependencies": {

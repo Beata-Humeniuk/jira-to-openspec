@@ -88,6 +88,14 @@ The extension compares the issue's last-updated time first. If nothing changed,
 nothing happens. Otherwise it asks before replacing the file content, because
 edits you have not pushed are lost. Your own front matter keys are kept.
 
+## Comments
+
+Set `jiraToOpenspec.includeComments` to `true` to download the issue's comments
+too. Download and Pull add them in a **Comments** section at the end of the
+file, one `###` heading per comment with its author and date. Push never sends
+this section to Jira: everything below its `<!-- jira-to-openspec:comments -->`
+line stays in the file only. To add a comment, write it in Jira.
+
 ## Push to Jira
 
 Open the Markdown file and run **Jira: Push Issue**, or click **↑ Push** in the
@@ -118,6 +126,7 @@ the Markdown that survives a round trip.
 | `jiraToOpenspec.changeField` | `description` | Where the change name lives: `description`, `labels`, or a custom field name or id. |
 | `jiraToOpenspec.changeLabelPrefix` | `openspec:` | The label prefix when `changeField` is `labels`. |
 | `jiraToOpenspec.descriptionFormat` | `html` | How Push writes the description: `html` for fields edited in a rich-text editor, `wiki` for the standard Jira wiki markup, `auto` to follow the issue's current format. |
+| `jiraToOpenspec.includeComments` | `false` | Download and Pull add the issue's comments at the end of the file. Push never sends them. |
 
 The token is stored in VS Code settings, which may be synced or shared.
 Restricted Mode is supported.
